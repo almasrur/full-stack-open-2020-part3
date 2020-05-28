@@ -36,6 +36,16 @@ let persons = [
       }
 ]
 
+
+app.get('/info', (req, res) => {
+  Person.count({}).then(count => {
+    res.send(
+      `<p>Phonebook has info for ${count} people</p>
+      <p>${new Date()}</p>`
+      )
+  })
+})
+
 app.get('/api/persons', (request, response) => {
   Person.find({})
     .then(p => {
