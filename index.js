@@ -8,8 +8,8 @@ const cors = require('cors')
 const morgan = require('morgan')
 
 app.use(cors())
-app.use(express.static('build'))
 app.use(express.json())
+app.use(express.static('build'))
 
 //morgan middleware
 morgan.token('post', function (req, res) { return JSON.stringify(req.body) })
@@ -28,7 +28,7 @@ app.get('/info', (req, res) => {
 //get list of paersons in backend
 app.get('/api/persons', (request, response) => {
   Person.find({}).then(p => {
-      response.json(persons.map(person => person.toJSON()))
+      response.json(p)
     })
 })
 
@@ -46,7 +46,7 @@ app.post('/api/persons', (request, response) => {
   })
   
   person.save().then(result => {
-    response.json(result.toJSON)
+    response.json(result)
   })
 })
 
@@ -55,7 +55,7 @@ app.get('/api/persons/:id', (request, response) => {
   Person.findById(request.params.id)
     .then(p => {
       if(p) {
-        response.json(p.toJSON())
+        response.json(p)
       } else {
         response.status(404).end() 
       }
@@ -68,11 +68,15 @@ app.get('/api/persons/:id', (request, response) => {
 
 //delete person data by id
 app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    persons = persons.filter(person => person.id !== id)
-  
-    response.status(204).end()
-}) 
+  Person.findByIdAndRemove(request.params.id)
+    .then(result => {
+      response.status(204).end()
+    })
+    .catch((err) => {
+      console.log(err)
+      response.status(400).end().send({ error: 'malformatted id' })
+  })
+})
 
 
 let persons = [
