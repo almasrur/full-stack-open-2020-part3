@@ -1,17 +1,79 @@
-require('dotenv').config()
+//initializing
 const express = require('express')
-const morgan = require('morgan')
-const cors = require('cors')
+const app = express()
+require('dotenv').config()
 const Person = require('./models/person')
 
-const app = express()
-
-morgan.token('post', function (req, res) { return JSON.stringify(req.body) })
+const cors = require('cors')
+const morgan = require('morgan')
 
 app.use(cors())
 app.use(express.static('build'))
 app.use(express.json())
+
+//morgan middleware
+morgan.token('post', function (req, res) { return JSON.stringify(req.body) })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post'))
+
+//get info page
+app.get('/info', (req, res) => {
+  Person.count({}).then(count => {
+    res.send(
+      `<p>Phonebook has info for ${count} people</p>
+      <p>${new Date()}</p>`
+      )
+  })
+})
+
+//get list of paersons in backend
+app.get('/api/persons', (request, response) => {
+  Person.find({}).then(p => {
+      response.json(persons.map(person => person.toJSON()))
+    })
+})
+
+//post all person data
+app.post('/api/persons', (request, response) => {
+  const body = request.body
+
+  if (body.content === undefined) {
+    return response.status(400).json({ error: 'content missing' })
+  }
+
+  const person = new Person({
+    name: request.body.name,
+    number: request.body.number,
+  })
+  
+  person.save().then(result => {
+    response.json(result.toJSON)
+  })
+})
+
+//get person data by id
+app.get('/api/persons/:id', (request, response) => {
+  Person.findById(request.params.id)
+    .then(p => {
+      if(p) {
+        response.json(p.toJSON())
+      } else {
+        response.status(404).end() 
+      }
+    })
+    .catch((err) => {
+      console.log(err)
+      response.status(400).end().send({ error: 'malformatted id' })
+  })
+})
+
+//delete person data by id
+app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    persons = persons.filter(person => person.id !== id)
+  
+    response.status(204).end()
+}) 
+
 
 let persons = [
     {
@@ -37,48 +99,10 @@ let persons = [
 ]
 
 
-app.get('/info', (req, res) => {
-  Person.count({}).then(count => {
-    res.send(
-      `<p>Phonebook has info for ${count} people</p>
-      <p>${new Date()}</p>`
-      )
-  })
-})
 
-app.get('/api/persons', (request, response) => {
-  Person.find({})
-    .then(p => {
-      response.json(p)
-    })
-})
 
-app.get('/api/persons/:id', (request, response) => {
-  Person.findById(request.params.id)
-    .then(p => {
-      response.json(p)
-    }).catch((err) => {
-      response.status(404).end()
-  })
-})
 
-app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    persons = persons.filter(person => person.id !== id)
-  
-    response.status(204).end()
-}) 
 
-app.post('/api/persons', (request, response) => {
-  const person = new Person({
-    name: request.body.name,
-    number: request.body.number,
-  })
-  
-  person.save().then(result => {
-    response.json(person)
-  })
-})
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
