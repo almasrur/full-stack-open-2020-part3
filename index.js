@@ -12,7 +12,7 @@ app.use(express.json())
 app.use(express.static('build'))
 
 //morgan middleware
-morgan.token('post', function (req, res) { return JSON.stringify(req.body) })
+morgan.token('post', req => JSON.stringify(req.body) )
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post'))
 
 //get info page
@@ -21,22 +21,22 @@ app.get('/info', (req, res) => {
     res.send(
       `<p>Phonebook has info for ${count} people</p>
       <p>${new Date()}</p>`
-      )
+    )
   })
 })
 
 //get list of paersons in backend
 app.get('/api/persons', (request, response) => {
   Person.find({}).then(p => {
-      response.json(p)
-    })
+    response.json(p)
+  })
 })
 
 //post new person data
 app.post('/api/persons', (request, response, next) => {
   const body = request.body
 
-  if (body.name === "") {
+  if (body.name === '') {
     return response.status(400).json({ error: 'name missing' })
   }
 
@@ -44,12 +44,12 @@ app.post('/api/persons', (request, response, next) => {
     name: request.body.name,
     number: request.body.number,
   })
-  
+
   person.save()
-  .then(result => {
-    response.json(result)
-  })
-  .catch(err => next(err))
+    .then(result => {
+      response.json(result)
+    })
+    .catch(err => next(err))
 })
 
 //get person data by id
@@ -59,7 +59,7 @@ app.get('/api/persons/:id', (request, response, next) => {
       if(p) {
         response.json(p)
       } else {
-        response.status(404).end() 
+        response.status(404).end()
       }
     })
     .catch(err => next(err))
@@ -69,7 +69,11 @@ app.get('/api/persons/:id', (request, response, next) => {
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndRemove(request.params.id)
     .then(result => {
-      response.status(204).end()
+      if(result) {
+        response.json(result.toJSON())
+      } else {
+        response.status(204).end()
+      }
     })
     .catch(err => next(err))
 })
@@ -98,7 +102,7 @@ const unknownEndpoint = (request, response) => {
 const errorHandler = (error, request, response, next) => {
   console.error(error.message)
 
-  if (error.name === 'CastError' && error.kind == 'ObjectId') {
+  if (error.name === 'CastError' && error.kind === 'ObjectId') {
     return response.status(400).send({ error: 'malformatted id' })
   } else if (error.name === 'ValidationError') {
     return response.status(400).json({ error: error.message })
@@ -111,7 +115,7 @@ app.use(errorHandler)
 
 app.use(unknownEndpoint)
 
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
